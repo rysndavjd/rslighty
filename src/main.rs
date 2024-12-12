@@ -3,6 +3,11 @@ use std::path::Path;
 use std::num::{ParseFloatError, ParseIntError};
 use std::io::{Error, Write, ErrorKind};
 use std::env;
+use std::process::exit;
+
+fn list_devices() {
+    return;
+}
 
 fn get_brightness(device: &str) -> Result<f32, String> {
     let brightness = fs::read_to_string(format!("{}/brightness", device))
@@ -59,9 +64,70 @@ fn check_backlight(backlight: &str) -> Result<String, String> {
     }
 }
 
+fn help() {
+    println!("usage: rslighty [--help] [--version] [--list] [--device DEVICE] [--get]");
+    println!("                [--get-steps] [--set PERCENT] [--inc PERCENT] [--dec PERCENT]");
+    return;
+}
+
+fn version() {
+    println!("{}", env!("CARGO_PKG_VERSION"));
+    return;
+}
+
 fn main() {    
     let args: Vec<String> = env::args().collect();
-    
+
+    if args.len() < 2 {
+        help();
+        return;
+    }
+
+    println!("Arguments: {:?}", args);
+    let mut percent: Option<String> = None;
+    let mut operation: Option<String> = None;
+    let mut device: Option<String> = None;
+    let mut get_percent: bool = false;
+    let mut get_steps: bool = false;
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--help" => help(),
+            "-h" => help(),
+            "--version" => version(),
+            "-v" => version(),
+            "--list" => list_devices(),
+            "--device" => {
+                if i + 1 < args.len() {
+                    //flag = Some(true);
+                    device = Some(args[i + 1].clone());
+                    i += 1;
+                } else {
+                    println!("Error: '--flag' requires a value");
+                    return;
+                }
+            }
+            _ => {
+                println!("Unknown argument: {}", args[i]);
+                return;
+            }
+        }
+        i += 1;
+    }
+    match device {
+        Some(s) => println!("{s}"),
+        None => println!("None"), 
+    };
+        //match flag {
+        //    Some(true) => {
+        //        println!("Flag is set, with value: {}", value.unwrap());
+        //    }
+        //    None => {
+        //        println!("Flag is not set.");
+        //    }
+        //}
+
     //match check_backlight("apple-panel-bl") {
     //    Ok(backlight) => {
     //        //if percentage > &100 {
