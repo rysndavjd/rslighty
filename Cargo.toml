@@ -7,3 +7,6 @@ edition = "2021"
 strip = true
 opt-level = "z" 
 lto = true
+
+[dependencies]
+clap = { version = "4.5.34", features = ["cargo", "derive"] }
