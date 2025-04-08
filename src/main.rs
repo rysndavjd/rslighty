@@ -17,6 +17,10 @@ fn get_max_brightness(device: &str) -> Result<u32, Box<dyn std::error::Error>> {
     return Ok(fs::read_to_string(format!("{}/max_brightness", device))?.trim().parse::<u32>()?);
 }
 
+fn get_brightness_percent(device: &str) -> Result<u8, Box<dyn std::error::Error>> {
+    return Ok(((get_brightness(device)? as f32 / get_max_brightness(device)? as f32 ) * 100.0 ).round() as u8);
+}
+
 fn set_brightness_absolute_percent(device: &str, mut percentage: &u8) -> Result<(), Box<dyn std::error::Error>> {
     if percentage > &100 {
         eprintln!("Warning cannot set brightness higher then 100%, truncating to 100%");
@@ -71,12 +75,7 @@ fn find_backlight(backlight: &str) -> Result<String, Box<dyn std::error::Error>>
     return Err("Device not found".into());
 }
 
-fn version() {
-    println!("{}", env!("CARGO_PKG_VERSION"));
-    return;
-}
-
-fn main() {    
+fn main() -> Result<(), Box<dyn std::error::Error>> {    
     let matches = command!()
     .arg(Arg::new("list")
             .long("list")
@@ -89,34 +88,66 @@ fn main() {
             .action(ArgAction::Set))
     .arg(Arg::new("get")
             .long("get")
-            .help("Get current brightness of selected device")
-            .action(ArgAction::SetTrue))
+            .help("Get current brightness of selected device in percent")
+            .action(ArgAction::SetTrue)
+            .requires("device"))
     .arg(Arg::new("get-steps")
             .long("get-steps")
             .help("Get brightness steps of selected device")
-            .action(ArgAction::SetTrue))
+            .action(ArgAction::SetTrue)
+            .requires("device"))
     .arg(Arg::new("set")
             .long("set")
             .help("Set brightness in percent of selected device")
             .value_name("percent")
-            .action(ArgAction::Set))
+            .action(ArgAction::Set)
+            .requires("device"))
     .arg(Arg::new("inc")
             .long("inc")
             .help("Increase brightness in percent of selected device")
             .value_name("percent")
-            .action(ArgAction::Set))
+            .action(ArgAction::Set)
+            .requires("device"))
     .arg(Arg::new("dec")
             .long("dec")
             .help("Decrease brightness in percent of selected device")
             .value_name("percent")
-            .action(ArgAction::Set))
+            .action(ArgAction::Set)
+            .requires("device"))
     .get_matches();
-    
 
+    if matches.get_flag("list") {
+        list_devices()?;
+        return Ok(());
+    }
 
+    if matches.contains_id("get") {
+        println!("{}", get_brightness_percent(matches.get_one::<String>("device").ok_or("Device not specified")?)?);
+        return Ok(());
+    }
 
-    //match set_brightness_relative_percent("/sys/class/backlight/apple-panel-bl", &10, &Sign::Plus) {
-    //    Ok(t) => t,
-    //    Err(e) => eprintln!("{}", e)
-    //}
+    if matches.get_flag("get-steps") {
+        println!("{}", get_max_brightness(matches.get_one::<String>("device").ok_or("Device not specified")?)?);
+        return Ok(());
+    }
+
+    if matches.get_flag("get") {
+        set_brightness_absolute_percent(matches.get_one::<String>("device").ok_or("Device not specified")?, 
+        matches.get_one::<u8>("get").ok_or("Device not specified")?)?;
+        return Ok(());
+    }
+
+    if matches.contains_id("inc") {
+        set_brightness_relative_percent(matches.get_one::<String>("device").ok_or("Device not specified")?, 
+        matches.get_one::<u8>("get").ok_or("Device not specified")?, &Sign::Plus)?;
+        return Ok(());
+    }
+
+    if matches.contains_id("dec") {
+        set_brightness_relative_percent(matches.get_one::<String>("device").ok_or("Device not specified")?, 
+        matches.get_one::<u8>("get").ok_or("Device not specified")?, &Sign::Minus)?;
+        return Ok(());
+    }
+
+    return Ok(());
 }
