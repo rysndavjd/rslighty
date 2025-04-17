@@ -4,6 +4,11 @@ use std::io::Write;
 use std::env;
 use clap::{command, value_parser, Arg, ArgAction};
 
+enum Sign {
+    Plus,
+    Minus,
+}
+
 fn list_devices() -> Result<(), Box<dyn std::error::Error>> {
     for path in ["/sys/class/backlight/", "/sys/class/leds/"] {
         let entries = fs::read_dir(path)?;
@@ -36,11 +41,6 @@ fn set_brightness_absolute_percent(device: &str, mut percentage: &u8) -> Result<
     brightness.flush()?;
 
     return Ok(());
-}
-
-enum Sign {
-    Plus,
-    Minus,
 }
 
 fn set_brightness_relative_percent(device: &str, percentage: &u8, operation: &Sign) -> Result<(), Box<dyn std::error::Error>> {
