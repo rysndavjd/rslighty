@@ -142,7 +142,14 @@ fn main() {
 
         if matches.get_flag("get") {
             match get_brightness(&device) {
-                Ok(t) => println!("{}", t),
+                Ok(brightness) => {
+                    match get_max_brightness(&device) {
+                        Ok(max_brightness) => {
+                            println!("{}", ( brightness as f32 / 100.0 ) * max_brightness as f32)
+                        },
+                        Err(e) => eprintln!("{}", e),
+                    };
+                },
                 Err(e) => eprintln!("{}", e),
             };
         }
