@@ -145,7 +145,7 @@ fn main() {
                 Ok(brightness) => {
                     match get_max_brightness(&device) {
                         Ok(max_brightness) => {
-                            println!("{}", ( brightness as f32 / 100.0 ) * max_brightness as f32)
+                            println!("{}", (( brightness as f32 / max_brightness as f32 ) * 100.0).round() )
                         },
                         Err(e) => eprintln!("{}", e),
                     };
