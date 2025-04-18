@@ -1,7 +1,6 @@
 use std::{fs::File, fs};
 use std::path::Path;
 use std::io::Write;
-use std::env;
 use clap::{command, value_parser, Arg, ArgAction};
 
 enum Sign {
