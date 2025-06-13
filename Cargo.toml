@@ -1,7 +1,7 @@
 [package]
 name = "rslighty"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [profile.release]
 strip = true
@@ -10,3 +10,4 @@ lto = true
 
 [dependencies]
 clap = { version = "4.5.34", features = ["cargo", "derive"] }
+thiserror = "2.0.12"

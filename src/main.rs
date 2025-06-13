@@ -1,14 +1,25 @@
-use std::{fs::File, fs};
-use std::path::Path;
-use std::io::Write;
+use std::{fs::File, fs, env::args, num::ParseIntError, path::Path, io::Write, io::Error};
 use clap::{command, value_parser, Arg, ArgAction};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum LightyError {
+    #[error("IO error occured: {0}")]
+    IOError(#[from] Error),
+    #[error("Unable to parse int")]
+    ParseError(#[from] ParseIntError),
+    #[error("Device not found")]
+    NotFound,
+    #[error("Unknown error")]
+    Unknown,
+}
 
 enum Sign {
     Plus,
     Minus,
 }
 
-fn list_devices() -> Result<(), Box<dyn std::error::Error>> {
+fn list_devices() -> Result<(), LightyError> {
     for path in ["/sys/class/backlight/", "/sys/class/leds/"] {
         let entries = fs::read_dir(path)?;
         for entry in entries {
@@ -20,15 +31,15 @@ fn list_devices() -> Result<(), Box<dyn std::error::Error>> {
     return Ok(());
 }
 
-fn get_brightness(device: &str) -> Result<u32, Box<dyn std::error::Error>> {
+fn get_brightness(device: &str) -> Result<u32, LightyError> {
     return Ok(fs::read_to_string(format!("{}/brightness", device))?.trim().parse::<u32>()?);
 }
 
-fn get_max_brightness(device: &str) -> Result<u32, Box<dyn std::error::Error>> {
+fn get_max_brightness(device: &str) -> Result<u32, LightyError> {
     return Ok(fs::read_to_string(format!("{}/max_brightness", device))?.trim().parse::<u32>()?);
 }
 
-fn set_brightness_absolute_percent(device: &str, mut percentage: &u8) -> Result<(), Box<dyn std::error::Error>> {
+fn set_brightness_absolute_percent(device: &str, mut percentage: &u8) -> Result<(), LightyError> {
     if percentage > &100 {
         eprintln!("Warning cannot set brightness higher then 100%, truncating to 100%");
         percentage = &100;
@@ -42,7 +53,7 @@ fn set_brightness_absolute_percent(device: &str, mut percentage: &u8) -> Result<
     return Ok(());
 }
 
-fn set_brightness_relative_percent(device: &str, percentage: &u8, operation: &Sign) -> Result<(), Box<dyn std::error::Error>> {
+fn set_brightness_relative_percent(device: &str, percentage: &u8, operation: &Sign) -> Result<(), LightyError> {
     let new_brightness_percent: f32;
     let brightness: f32 = get_brightness(device)? as f32;
     let max_brightness: f32 = get_max_brightness(device)? as f32;
@@ -60,7 +71,7 @@ fn set_brightness_relative_percent(device: &str, percentage: &u8, operation: &Si
     return Ok(());
 }
 
-fn find_backlight(backlight: &str) -> Result<String, Box<dyn std::error::Error>> {
+fn find_backlight(backlight: &str) -> Result<String, LightyError> {
     let class_path: &Path = Path::new(&backlight);
     if class_path.exists() && backlight.contains("/sys/class") {
         return Ok(backlight.to_string());
@@ -74,7 +85,7 @@ fn find_backlight(backlight: &str) -> Result<String, Box<dyn std::error::Error>>
         return Ok(backlight_path);
     }
     
-    return Err("Device not found".into());
+    return Err(LightyError::NotFound);
 }
 
 fn main() {    
@@ -179,6 +190,10 @@ fn main() {
                 Ok(_) => println!("Done"),
                 Err(e) => eprintln!("{}", e),
             };        
+        }
+        
+        if args().skip(1).count() <= 2 {
+            println!("Specify what action to do with device!!!");
         }
     }
 }
